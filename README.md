@@ -67,7 +67,7 @@ sudo raspi-config
 ```bash
 sudo mkdir -p /opt/kurupiro
 sudo chown $USER:$USER /opt/kurupiro
-git clone -b career https://github.com/ichipiro/KuruPiro-signage.git /opt/kurupiro
+git clone https://github.com/ichipiro/KuruPiro-signage-career.git /opt/kurupiro
 cd /opt/kurupiro
 ```
 
@@ -95,6 +95,12 @@ KURUPIRO_KIOSK_URL="http://localhost/"
 # スライドショー用の Chromium で開くURL
 KURUPIRO_SLIDESHOW_URL="http://localhost/slideshow.html"
 
+# 表示に使う出力名（例: HDMI-1）
+KURUPIRO_DISPLAY_OUTPUT="HDMI-1"
+
+# 画面回転（normal / left / right / inverted）
+KURUPIRO_DISPLAY_ROTATION="right"
+
 # 自動シャットダウン時刻（HH:MM形式）
 KURUPIRO_SHUTDOWN_TIME="21:57"
 
@@ -120,6 +126,7 @@ sudo reboot
 
 - **起動時**: `start.sh` が自動実行され、`git pull` → Chromium 2画面を起動
 - **起動時**: Google Drive 画像を1回同期
+- **起動時**: `xrandr` で画面回転を適用
 - **60秒ごと（既定）**: `app-switcher.sh` でメイン画面とスライドショー画面を切り替え
 - **2時間ごと**: `reload.sh` で F5 リロード
 - **10分ごと（既定）**: `sync-drive-images.sh` で Google Drive 画像を同期
@@ -136,3 +143,9 @@ sudo reboot
 - 同期画像が 0 件なら既存の `ad-01.png` を表示します。
 - スライドショー画面は `slideshow.html` を別の Chromium ウィンドウで開き、画像を 10 秒ごとに切り替えます。
 - `app-switcher.sh` はメイン画面とスライドショー画面を 60 秒ごとに交互表示します。
+
+## 縦画面設定
+
+- `.env` の `KURUPIRO_DISPLAY_OUTPUT` に出力名、`KURUPIRO_DISPLAY_ROTATION` に回転方向を設定します。
+- 縦画面なら通常は `KURUPIRO_DISPLAY_ROTATION="right"` または `left` を使います。
+- 出力名は Raspberry Pi 上で `xrandr` を実行すると確認できます。

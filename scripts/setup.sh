@@ -54,7 +54,7 @@ if [ ! -d "${APP_DIR}/.git" ]; then
   echo "先に以下のコマンドで clone してください:" >&2
   echo "  sudo mkdir -p ${APP_DIR}" >&2
   echo "  sudo chown ${PI_USER}:${PI_USER} ${APP_DIR}" >&2
-  echo "  git clone https://github.com/ichipiro/KuruPiro-signage.git ${APP_DIR}" >&2
+  echo "  git clone https://github.com/ichipiro/KuruPiro-signage-career.git ${APP_DIR}" >&2
   exit 1
 fi
 

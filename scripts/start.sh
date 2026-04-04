@@ -19,13 +19,15 @@ BASE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 load_kurupiro_env
 
 # リポジトリURL
-REPO_URL="https://github.com/ichipiro/KuruPiro-signage.git"
+REPO_URL="https://github.com/ichipiro/KuruPiro-signage-career.git"
 
 # 設定値（デフォルト）
 KIOSK_URL="${KURUPIRO_KIOSK_URL:-http://localhost/}"
 SLIDESHOW_URL="${KURUPIRO_SLIDESHOW_URL:-http://localhost/slideshow.html}"
 CHROMIUM_BIN="${KURUPIRO_CHROMIUM_BIN:-chromium}"
 CHROMIUM_PROFILE_BASE="${KURUPIRO_CHROMIUM_PROFILE_BASE:-/home/${KURUPIRO_PI_USER}/.config/kurupiro}"
+DISPLAY_OUTPUT="${KURUPIRO_DISPLAY_OUTPUT:-HDMI-1}"
+DISPLAY_ROTATION="${KURUPIRO_DISPLAY_ROTATION:-right}"
 
 echo "===== くるぴろ起動スクリプト開始 ====="
 
@@ -143,6 +145,15 @@ echo "[kurupiro] スクリーンセーバー・DPMSを無効化しました"
 
 # 背景を黒に設定
 xsetroot -solid black 2>/dev/null || true
+
+# 画面回転を適用
+if [ -n "${DISPLAY_OUTPUT}" ] && [ -n "${DISPLAY_ROTATION}" ]; then
+  if xrandr --output "${DISPLAY_OUTPUT}" --rotate "${DISPLAY_ROTATION}" 2>/tmp/kurupiro-xrandr.log; then
+    echo "[kurupiro] 画面回転を適用しました: ${DISPLAY_OUTPUT} -> ${DISPLAY_ROTATION}"
+  else
+    echo "[kurupiro] 警告: 画面回転の適用に失敗しました (${DISPLAY_OUTPUT} -> ${DISPLAY_ROTATION})" >&2
+  fi
+fi
 
 echo "[kurupiro] URL: ${KIOSK_URL}"
 echo "[kurupiro] Slideshow URL: ${SLIDESHOW_URL}"

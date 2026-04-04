@@ -7,10 +7,16 @@ let imageIndex = 0;
 let manifestVersion = '';
 let rotateTimer = null;
 let completedCycles = 0;
+let cycleCompleteHold = false;
 
 function updateTitle() {
   if (images.length === 0) {
     document.title = 'くるぴろスライドショー [0/0] cycle=0';
+    return;
+  }
+
+  if (cycleCompleteHold) {
+    document.title = `くるぴろスライドショー [${images.length}/${images.length}] cycle=${completedCycles}`;
     return;
   }
 
@@ -50,6 +56,9 @@ function resetRotation() {
     const nextIndex = (imageIndex + 1) % images.length;
     if (nextIndex === 0) {
       completedCycles += 1;
+      cycleCompleteHold = true;
+      updateTitle();
+      return;
     }
     imageIndex = nextIndex;
     updateSlide();
@@ -80,6 +89,7 @@ async function loadManifest() {
     images = nextImages.filter((image) => typeof image.path === 'string' && image.path.length > 0);
     imageIndex = 0;
     completedCycles = 0;
+    cycleCompleteHold = false;
     resetRotation();
   } catch (error) {
     if (images.length === 0) {

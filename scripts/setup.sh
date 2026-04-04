@@ -283,6 +283,7 @@ ExecStart=${APP_DIR}/scripts/start.sh
 User=${PI_USER}
 Group=${PI_USER}
 Environment=DISPLAY=:0
+KillMode=process
 Restart=on-failure
 RestartSec=10
 

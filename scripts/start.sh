@@ -13,21 +13,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck disable=SC1091
+. "${SCRIPT_DIR}/common.sh"
 
-# .env 読み込み
-if [ -f "${BASE_DIR}/.env" ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . "${BASE_DIR}/.env"
-  set +a
-fi
+load_kurupiro_env
 
 # リポジトリURL
 REPO_URL="https://github.com/ichipiro/KuruPiro-signage.git"
 
 # 設定値（デフォルト）
 KIOSK_URL="${KURUPIRO_KIOSK_URL:-http://localhost/}"
-KURUPIRO_PI_USER="${KURUPIRO_PI_USER:-ie-career}"
 SLIDESHOW_URL="${KURUPIRO_SLIDESHOW_URL:-http://localhost/slideshow.html}"
 CHROMIUM_BIN="${KURUPIRO_CHROMIUM_BIN:-chromium}"
 
@@ -123,10 +118,6 @@ echo "[3/3] Chromium キオスク起動..."
 # X が立ち上がるまで少し待つ（必要に応じて調整）
 sleep 5
 
-# DISPLAY環境変数を設定（X11に接続するために必要）
-export DISPLAY=:0
-export XAUTHORITY="/home/${KURUPIRO_PI_USER}/.Xauthority"
-
 # X11が利用可能になるまで待機
 MAX_WAIT=30
 WAITED=0
@@ -164,7 +155,7 @@ echo "[kurupiro] キャッシュウォームアップ開始 (PID: ${WARMUP_PID})
 pkill -f "${SLIDESHOW_URL}" 2>/dev/null || true
 pkill -f "${KIOSK_URL}" 2>/dev/null || true
 
-"${CHROMIUM_BIN}" \
+nohup setsid "${CHROMIUM_BIN}" \
   --kiosk "${KIOSK_URL}" \
   --incognito \
   --noerrdialogs \
@@ -172,11 +163,11 @@ pkill -f "${KIOSK_URL}" 2>/dev/null || true
   --autoplay-policy=no-user-gesture-required \
   --disable-translate \
   --disable-features=Translate \
-  >/tmp/kurupiro-main-chromium.log 2>&1 &
+  >/tmp/kurupiro-main-chromium.log 2>&1 </dev/null &
 
 sleep 5
 
-"${CHROMIUM_BIN}" \
+nohup setsid "${CHROMIUM_BIN}" \
   --new-window "${SLIDESHOW_URL}" \
   --start-fullscreen \
   --incognito \
@@ -185,6 +176,6 @@ sleep 5
   --autoplay-policy=no-user-gesture-required \
   --disable-translate \
   --disable-features=Translate \
-  >/tmp/kurupiro-slideshow-chromium.log 2>&1 &
+  >/tmp/kurupiro-slideshow-chromium.log 2>&1 </dev/null &
 
 echo "===== くるぴろ起動スクリプト終了 ====="

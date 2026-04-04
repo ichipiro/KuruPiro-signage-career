@@ -4,8 +4,15 @@
 const RETRY_INTERVAL = 60; // 秒
 const KURUPIRO_SERVER_URL = 'https://kurupiro.ichipiro.net/';
 const API_SERVER_URL = 'https://kurupiro.ichipiro.net/api/';
+const DRIVE_IMAGE_MANIFEST_URL = './drive-images/index.json';
+const DRIVE_IMAGE_REFRESH_INTERVAL = 5 * 60 * 1000;
+const DRIVE_IMAGE_ROTATE_INTERVAL = 30 * 1000;
 
 let retryCountdown = RETRY_INTERVAL;
+let driveImages = [];
+let driveImageIndex = 0;
+let driveImageTimer = null;
+let driveManifestVersion = '';
 
 // 現在時刻更新
 function updateTime() {
@@ -13,6 +20,71 @@ function updateTime() {
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   document.getElementById('current-time').textContent = hours + ':' + minutes;
+}
+
+function updateAdImage(path) {
+  const img = document.getElementById('ad-image');
+  if (!img || !path) return;
+  img.src = path;
+}
+
+function showCurrentDriveImage() {
+  const img = document.getElementById('ad-image');
+  if (!img) return;
+
+  if (driveImages.length === 0) {
+    updateAdImage(img.dataset.defaultSrc);
+    return;
+  }
+
+  const current = driveImages[driveImageIndex % driveImages.length];
+  updateAdImage(current.path);
+}
+
+function resetDriveImageRotation() {
+  if (driveImageTimer) {
+    clearInterval(driveImageTimer);
+    driveImageTimer = null;
+  }
+
+  showCurrentDriveImage();
+
+  if (driveImages.length <= 1) {
+    return;
+  }
+
+  driveImageTimer = setInterval(() => {
+    driveImageIndex = (driveImageIndex + 1) % driveImages.length;
+    showCurrentDriveImage();
+  }, DRIVE_IMAGE_ROTATE_INTERVAL);
+}
+
+async function loadDriveImages() {
+  try {
+    const response = await fetch(`${DRIVE_IMAGE_MANIFEST_URL}?t=${Date.now()}`, {
+      cache: 'no-store'
+    });
+    if (!response.ok) {
+      throw new Error(`manifest fetch failed: ${response.status}`);
+    }
+
+    const manifest = await response.json();
+    const images = Array.isArray(manifest.images) ? manifest.images : [];
+    const version = String(manifest.updatedAt || '') + ':' + images.map((image) => image.path).join('|');
+
+    if (version === driveManifestVersion) {
+      return;
+    }
+
+    driveManifestVersion = version;
+    driveImages = images.filter((image) => typeof image.path === 'string' && image.path.length > 0);
+    driveImageIndex = 0;
+    resetDriveImageRotation();
+  } catch (error) {
+    if (driveImages.length === 0) {
+      showCurrentDriveImage();
+    }
+  }
 }
 
 // ステータス表示更新
@@ -200,6 +272,9 @@ window.addEventListener('offline', () => {
 document.addEventListener('DOMContentLoaded', () => {
   updateTime();
   setInterval(updateTime, 1000);
+
+  loadDriveImages();
+  setInterval(loadDriveImages, DRIVE_IMAGE_REFRESH_INTERVAL);
   
   runAllChecks();
   setInterval(updateRetryCountdown, 1000);

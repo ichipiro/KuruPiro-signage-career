@@ -1,0 +1,6 @@
+.env
+apps/ebitv/ebitv
+apps/ebitv/data/
+www/drive-images/*
+!www/drive-images/.gitkeep
+!www/drive-images/index.json

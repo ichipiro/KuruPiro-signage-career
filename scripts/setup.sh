@@ -42,6 +42,8 @@ apt-get install -y \
   nginx \
   xdotool \
   curl \
+  wget \
+  python3 \
   unclutter \
   fonts-noto-cjk
 
@@ -81,6 +83,7 @@ SHUTDOWN_TIME="${KURUPIRO_SHUTDOWN_TIME:-21:57}"
 SHUTDOWN_HOUR="${SHUTDOWN_TIME%%:*}"
 SHUTDOWN_MIN="${SHUTDOWN_TIME##*:}"
 RELOAD_INTERVAL="${KURUPIRO_RELOAD_INTERVAL:-2h}"
+DRIVE_SYNC_INTERVAL="${KURUPIRO_DRIVE_SYNC_INTERVAL:-10min}"
 
 # X11セッション（rpd-x）に強制設定（Waylandではunclutterが動作しないため）
 LIGHTDM_CONF="/etc/lightdm/lightdm.conf"
@@ -304,6 +307,34 @@ Unit=kurupiro-reload.service
 WantedBy=timers.target
 EOF
 
+# Google Drive 画像同期 service + timer
+cat > /etc/systemd/system/kurupiro-drive-sync.service <<EOF
+[Unit]
+Description=kurupiro Google Drive image sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=${APP_DIR}/scripts/sync-drive-images.sh
+User=${PI_USER}
+Group=${PI_USER}
+EOF
+
+cat > /etc/systemd/system/kurupiro-drive-sync.timer <<EOF
+[Unit]
+Description=kurupiro Google Drive image sync timer
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=${DRIVE_SYNC_INTERVAL}
+Unit=kurupiro-drive-sync.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
 # app-switcher.timer（30秒ごとにアプリ切り替え）
 cat > /etc/systemd/system/app-switcher.timer <<EOF
 [Unit]
@@ -399,6 +430,7 @@ echo "[11/12] systemd 有効化"
 systemctl daemon-reload
 systemctl enable kurupiro-start.service
 systemctl enable kurupiro-reload.timer
+systemctl enable kurupiro-drive-sync.timer
 systemctl enable app-switcher.timer
 
 touch "${INSTALL_FLAG}"

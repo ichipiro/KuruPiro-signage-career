@@ -62,6 +62,16 @@ if [ -f "$OFFLINE_HTML" ]; then
   echo "[kurupiro] コミットハッシュ: ${COMMIT_HASH}"
 fi
 
+# Google Drive 画像同期
+if [ -x "${SCRIPT_DIR}/sync-drive-images.sh" ]; then
+  echo "[1.0/3] Google Drive 画像同期..."
+  if "${SCRIPT_DIR}/sync-drive-images.sh"; then
+    echo "[drive-sync] 起動時同期 完了"
+  else
+    echo "[drive-sync] 警告: 起動時同期に失敗しました" >&2
+  fi
+fi
+
 # --------------------------------------------------------------------------------
 # 1.1. キャリアルーム用アプリケーションのダウンロード
 # ------------------------------------------------------------------------------

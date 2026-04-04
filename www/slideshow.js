@@ -8,6 +8,8 @@ let manifestVersion = '';
 let rotateTimer = null;
 let completedCycles = 0;
 let cycleCompleteHold = false;
+let progressTimer = null;
+let cycleStartedAt = 0;
 
 function updateTitle() {
   if (images.length === 0) {
@@ -25,19 +27,46 @@ function updateTitle() {
 
 function updateSlide() {
   const imageEl = document.getElementById('slideshow-image');
+  const progressEl = document.getElementById('slideshow-progress');
   if (!imageEl) return;
 
   if (images.length === 0) {
     imageEl.removeAttribute('src');
     imageEl.style.visibility = 'hidden';
+    if (progressEl) {
+      progressEl.style.visibility = 'hidden';
+    }
     updateTitle();
     return;
   }
 
   const current = images[imageIndex % images.length];
   imageEl.style.visibility = 'visible';
+  if (progressEl) {
+    progressEl.style.visibility = 'visible';
+  }
   imageEl.src = current.path;
   updateTitle();
+}
+
+function updateProgress() {
+  const progressFillEl = document.getElementById('slideshow-progress-fill');
+  if (!progressFillEl) return;
+
+  if (images.length === 0) {
+    progressFillEl.style.width = '0%';
+    return;
+  }
+
+  const totalCycleMs = images.length * IMAGE_ROTATE_INTERVAL;
+  if (totalCycleMs <= 0) {
+    progressFillEl.style.width = '0%';
+    return;
+  }
+
+  const elapsedMs = cycleCompleteHold ? totalCycleMs : Math.max(0, Date.now() - cycleStartedAt);
+  const progress = Math.min(elapsedMs / totalCycleMs, 1);
+  progressFillEl.style.width = `${progress * 100}%`;
 }
 
 function resetRotation() {
@@ -45,10 +74,27 @@ function resetRotation() {
     clearInterval(rotateTimer);
     rotateTimer = null;
   }
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+
+  cycleStartedAt = Date.now();
 
   updateSlide();
+  updateProgress();
+
+  progressTimer = setInterval(updateProgress, 200);
 
   if (images.length <= 1) {
+    rotateTimer = setInterval(() => {
+      completedCycles = 1;
+      cycleCompleteHold = true;
+      updateTitle();
+      updateProgress();
+      clearInterval(rotateTimer);
+      rotateTimer = null;
+    }, IMAGE_ROTATE_INTERVAL);
     return;
   }
 
@@ -57,7 +103,10 @@ function resetRotation() {
     if (nextIndex === 0) {
       completedCycles += 1;
       cycleCompleteHold = true;
+      clearInterval(rotateTimer);
+      rotateTimer = null;
       updateTitle();
+      updateProgress();
       return;
     }
     imageIndex = nextIndex;

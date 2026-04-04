@@ -29,3 +29,22 @@ body {
   background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 2vw 4vw rgba(0, 0, 0, 0.25);
 }
+
+.slideshow-progress {
+  position: absolute;
+  left: 2.5vw;
+  right: 2.5vw;
+  bottom: 1.2vw;
+  height: 0.7vw;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 0.08vw rgba(255, 255, 255, 0.12);
+}
+
+.slideshow-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd06c 0%, #fff0b8 100%);
+  transition: width 0.2s linear;
+}

@@ -14,7 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "${SCRIPT_DIR}/common.sh"
 load_kurupiro_env
 
-SLIDESHOW_WINDOW_TITLE="${KURUPIRO_SLIDESHOW_WINDOW_TITLE:-くるぴろスライドショー - Chromium}"
+SLIDESHOW_WINDOW_TITLE_PREFIX="${KURUPIRO_SLIDESHOW_WINDOW_TITLE_PREFIX:-くるぴろスライドショー}"
 MAIN_SCREEN_DURATION="${KURUPIRO_APP_SWITCH_INTERVAL:-60s}"
 STATE_FILE="${KURUPIRO_APP_SWITCH_STATE_FILE:-/tmp/kurupiro-app-switcher-state}"
 
@@ -88,7 +88,7 @@ if ! ACTIVE_WINDOW=$(xdotool getactivewindow 2>/dev/null); then
   exit 0
 fi
 
-SLIDESHOW_WINDOW="$(find_visible_window_by_name "${SLIDESHOW_WINDOW_TITLE}")"
+SLIDESHOW_WINDOW="$(find_visible_window_by_name "${SLIDESHOW_WINDOW_TITLE_PREFIX}")"
 MAIN_WINDOW="$(find_main_chromium_window)"
 SLIDESHOW_WINDOW_NAME=""
 

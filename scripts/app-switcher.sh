@@ -16,7 +16,19 @@ load_kurupiro_env
 first_window_id() {
   local name="$1"
 
-  xdotool search --name "${name}" 2>/dev/null | head -n 1 || true
+  xdotool search --onlyvisible --name "${name}" 2>/dev/null | head -n 1 || true
+}
+
+first_window_id_by_pid() {
+  local process_name="$1"
+  local pid
+
+  pid="$(pgrep -n -x "${process_name}" 2>/dev/null || true)"
+  if [ -z "${pid}" ]; then
+    return 0
+  fi
+
+  xdotool search --onlyvisible --pid "${pid}" 2>/dev/null | head -n 1 || true
 }
 
 if ! ACTIVE_WINDOW=$(xdotool getactivewindow 2>/dev/null); then
@@ -24,7 +36,11 @@ if ! ACTIVE_WINDOW=$(xdotool getactivewindow 2>/dev/null); then
   exit 0
 fi
 
-APP_WINDOW="$(first_window_id "ebitv")"
+APP_WINDOW="$(first_window_id_by_pid "ebitv")"
+if [ -z "${APP_WINDOW}" ]; then
+  APP_WINDOW="$(first_window_id "ebitv")"
+fi
+
 CHROME_WINDOW="$(first_window_id "Chromium")"
 
 if [ -n "$APP_WINDOW" ] && [ "${ACTIVE_WINDOW}" = "${APP_WINDOW}" ]; then

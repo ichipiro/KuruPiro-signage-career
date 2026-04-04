@@ -16,9 +16,7 @@ load_kurupiro_env
 
 SLIDESHOW_WINDOW_TITLE="${KURUPIRO_SLIDESHOW_WINDOW_TITLE:-くるぴろスライドショー - Chromium}"
 MAIN_SCREEN_DURATION="${KURUPIRO_APP_SWITCH_INTERVAL:-60s}"
-SLIDESHOW_IMAGE_DURATION_SECONDS="${KURUPIRO_SLIDESHOW_IMAGE_DURATION_SECONDS:-10}"
 STATE_FILE="${KURUPIRO_APP_SWITCH_STATE_FILE:-/tmp/kurupiro-app-switcher-state}"
-MANIFEST_PATH="${BASE_DIR}/www/drive-images/index.json"
 
 find_visible_window_by_name() {
   local name="$1"
@@ -36,7 +34,7 @@ find_main_chromium_window() {
     if [ -z "${window_name}" ]; then
       continue
     fi
-    if [ "${window_name}" = "${SLIDESHOW_WINDOW_TITLE}" ]; then
+    if [[ "${window_name}" == *"くるぴろスライドショー"* ]]; then
       continue
     fi
     printf '%s\n' "${window_id}"
@@ -66,22 +64,6 @@ else:
 PY
 }
 
-manifest_image_count() {
-  python3 - "${MANIFEST_PATH}" <<'PY'
-import json
-import sys
-
-path = sys.argv[1]
-try:
-    with open(path, "r", encoding="utf-8") as fh:
-        data = json.load(fh)
-    images = data.get("images", [])
-    print(len(images) if isinstance(images, list) else 0)
-except Exception:
-    print(0)
-PY
-}
-
 read_state() {
   if [ -f "${STATE_FILE}" ]; then
     IFS='|' read -r STATE_MODE STATE_SINCE < "${STATE_FILE}" || true
@@ -95,8 +77,6 @@ write_state() {
 }
 
 MAIN_SCREEN_DURATION_SECONDS="$(duration_to_seconds "${MAIN_SCREEN_DURATION}")"
-IMAGE_COUNT="$(manifest_image_count)"
-SLIDESHOW_CYCLE_DURATION_SECONDS=$((IMAGE_COUNT * SLIDESHOW_IMAGE_DURATION_SECONDS))
 NOW="$(date +%s)"
 
 STATE_MODE=""
@@ -110,6 +90,11 @@ fi
 
 SLIDESHOW_WINDOW="$(find_visible_window_by_name "${SLIDESHOW_WINDOW_TITLE}")"
 MAIN_WINDOW="$(find_main_chromium_window)"
+SLIDESHOW_WINDOW_NAME=""
+
+if [ -n "${SLIDESHOW_WINDOW}" ]; then
+  SLIDESHOW_WINDOW_NAME="$(xdotool getwindowname "${SLIDESHOW_WINDOW}" 2>/dev/null || true)"
+fi
 
 if [ -n "${MAIN_WINDOW}" ] && [ "${ACTIVE_WINDOW}" = "${MAIN_WINDOW}" ]; then
   if [ "${STATE_MODE}" != "main" ]; then
@@ -130,24 +115,40 @@ if [ -z "${STATE_SINCE}" ]; then
 fi
 
 ELAPSED_SECONDS=$((NOW - STATE_SINCE))
+SLIDESHOW_CYCLE_COMPLETE=false
+SLIDESHOW_HAS_IMAGES=false
+
+if [[ "${SLIDESHOW_WINDOW_NAME}" =~ \[([0-9]+)/([0-9]+)\]\ cycle=([0-9]+) ]]; then
+  current_image="${BASH_REMATCH[1]}"
+  total_images="${BASH_REMATCH[2]}"
+  cycle_count="${BASH_REMATCH[3]}"
+
+  if [ "${total_images}" -gt 0 ]; then
+    SLIDESHOW_HAS_IMAGES=true
+  fi
+
+  if [ "${cycle_count}" -ge 1 ]; then
+    SLIDESHOW_CYCLE_COMPLETE=true
+  fi
+fi
 
 if [ -n "$SLIDESHOW_WINDOW" ] && [ "${ACTIVE_WINDOW}" = "${SLIDESHOW_WINDOW}" ]; then
   # スライドショーが1周したらメイン画面へ戻す
-  if [ "${IMAGE_COUNT}" -le 0 ] && [ -n "${MAIN_WINDOW}" ]; then
+  if [ "${SLIDESHOW_HAS_IMAGES}" = false ] && [ -n "${MAIN_WINDOW}" ]; then
     xdotool windowactivate --sync "$MAIN_WINDOW"
     write_state "main" "${NOW}"
     echo "[app-switcher] スライドショー画像が無いためメイン画面へ戻しました"
-  elif [ "${SLIDESHOW_CYCLE_DURATION_SECONDS}" -gt 0 ] && [ "${ELAPSED_SECONDS}" -ge "${SLIDESHOW_CYCLE_DURATION_SECONDS}" ] && [ -n "${MAIN_WINDOW}" ]; then
+  elif [ "${SLIDESHOW_CYCLE_COMPLETE}" = true ] && [ -n "${MAIN_WINDOW}" ]; then
     xdotool windowactivate --sync "$MAIN_WINDOW"
     write_state "main" "${NOW}"
     echo "[app-switcher] スライドショーを1周したためメイン画面に切り替えました"
   else
-    echo "[app-switcher] スライドショー継続中 (${ELAPSED_SECONDS}s / ${SLIDESHOW_CYCLE_DURATION_SECONDS}s)"
+    echo "[app-switcher] スライドショー継続中: ${SLIDESHOW_WINDOW_NAME}"
   fi
 elif [ -n "$MAIN_WINDOW" ] && [ "${ACTIVE_WINDOW}" = "${MAIN_WINDOW}" ]; then
   # メイン画面は一定時間表示したらスライドショーへ切り替える
-  if [ "${IMAGE_COUNT}" -le 0 ]; then
-    echo "[app-switcher] スライドショー画像が無いためメイン画面を継続します"
+  if [ -z "${SLIDESHOW_WINDOW}" ]; then
+    echo "[app-switcher] スライドショー用の Chromium ウィンドウが見つからないためメイン画面を継続します"
   elif [ "${ELAPSED_SECONDS}" -ge "${MAIN_SCREEN_DURATION_SECONDS}" ] && [ -n "${SLIDESHOW_WINDOW}" ]; then
     xdotool windowactivate --sync "$SLIDESHOW_WINDOW"
     write_state "slideshow" "${NOW}"

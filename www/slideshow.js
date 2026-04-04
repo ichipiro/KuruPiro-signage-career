@@ -6,6 +6,16 @@ let images = [];
 let imageIndex = 0;
 let manifestVersion = '';
 let rotateTimer = null;
+let completedCycles = 0;
+
+function updateTitle() {
+  if (images.length === 0) {
+    document.title = 'くるぴろスライドショー [0/0] cycle=0';
+    return;
+  }
+
+  document.title = `くるぴろスライドショー [${imageIndex + 1}/${images.length}] cycle=${completedCycles}`;
+}
 
 function updateSlide() {
   const imageEl = document.getElementById('slideshow-image');
@@ -14,12 +24,14 @@ function updateSlide() {
   if (images.length === 0) {
     imageEl.removeAttribute('src');
     imageEl.style.visibility = 'hidden';
+    updateTitle();
     return;
   }
 
   const current = images[imageIndex % images.length];
   imageEl.style.visibility = 'visible';
   imageEl.src = current.path;
+  updateTitle();
 }
 
 function resetRotation() {
@@ -35,7 +47,11 @@ function resetRotation() {
   }
 
   rotateTimer = setInterval(() => {
-    imageIndex = (imageIndex + 1) % images.length;
+    const nextIndex = (imageIndex + 1) % images.length;
+    if (nextIndex === 0) {
+      completedCycles += 1;
+    }
+    imageIndex = nextIndex;
     updateSlide();
   }, IMAGE_ROTATE_INTERVAL);
 }
@@ -63,6 +79,7 @@ async function loadManifest() {
     manifestVersion = nextVersion;
     images = nextImages.filter((image) => typeof image.path === 'string' && image.path.length > 0);
     imageIndex = 0;
+    completedCycles = 0;
     resetRotation();
   } catch (error) {
     if (images.length === 0) {

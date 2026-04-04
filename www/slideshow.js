@@ -69,7 +69,7 @@ function updateProgress() {
   progressFillEl.style.width = `${progress * 100}%`;
 }
 
-function resetRotation() {
+function stopTimers() {
   if (rotateTimer) {
     clearInterval(rotateTimer);
     rotateTimer = null;
@@ -78,6 +78,14 @@ function resetRotation() {
     clearInterval(progressTimer);
     progressTimer = null;
   }
+}
+
+function startCycle() {
+  stopTimers();
+
+  imageIndex = 0;
+  completedCycles = 0;
+  cycleCompleteHold = false;
 
   cycleStartedAt = Date.now();
 
@@ -131,17 +139,18 @@ async function loadManifest() {
     });
 
     if (nextVersion === manifestVersion) {
+      if (document.visibilityState === 'visible' && cycleCompleteHold) {
+        startCycle();
+      }
       return;
     }
 
     manifestVersion = nextVersion;
     images = nextImages.filter((image) => typeof image.path === 'string' && image.path.length > 0);
-    imageIndex = 0;
-    completedCycles = 0;
-    cycleCompleteHold = false;
-    resetRotation();
+    startCycle();
   } catch (error) {
     if (images.length === 0) {
+      stopTimers();
       updateSlide();
     }
   }
@@ -151,4 +160,16 @@ document.addEventListener('DOMContentLoaded', () => {
   updateSlide();
   loadManifest();
   setInterval(loadManifest, MANIFEST_REFRESH_INTERVAL);
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') {
+    return;
+  }
+
+  if (images.length > 0) {
+    startCycle();
+  } else {
+    loadManifest();
+  }
 });

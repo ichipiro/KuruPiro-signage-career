@@ -108,7 +108,7 @@ KURUPIRO_SHUTDOWN_TIME="21:57"
 KURUPIRO_APP_SWITCH_INTERVAL="60s"
 
 # 切り替え判定を行う周期
-KURUPIRO_APP_SWITCH_CHECK_INTERVAL="10s"
+KURUPIRO_APP_SWITCH_CHECK_INTERVAL="1s"
 
 # Google Drive の公開フォルダURL
 KURUPIRO_GOOGLE_DRIVE_FOLDER_URL="https://drive.google.com/drive/folders/xxxxxxxxxxxxxxxxxxxx"
@@ -131,7 +131,7 @@ sudo reboot
 - **起動時**: Google Drive 画像を1回同期
 - **起動時**: `xrandr` で画面回転を適用
 - **60秒表示後**: メイン画面からスライドショー画面へ切り替え
-- **10秒ごと**: `app-switcher.service` が状態を確認
+- **1秒ごと（既定）**: `app-switcher.service` が状態を確認
 - **2時間ごと**: `reload.sh` で F5 リロード
 - **10分ごと（既定）**: `sync-drive-images.sh` で Google Drive 画像を同期
 - **シャットダウン**: `.env` で設定した時刻に自動シャットダウン

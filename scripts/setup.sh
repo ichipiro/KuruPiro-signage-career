@@ -83,8 +83,6 @@ SHUTDOWN_TIME="${KURUPIRO_SHUTDOWN_TIME:-21:57}"
 SHUTDOWN_HOUR="${SHUTDOWN_TIME%%:*}"
 SHUTDOWN_MIN="${SHUTDOWN_TIME##*:}"
 RELOAD_INTERVAL="${KURUPIRO_RELOAD_INTERVAL:-2h}"
-APP_SWITCH_INTERVAL="${KURUPIRO_APP_SWITCH_INTERVAL:-60s}"
-APP_SWITCH_CHECK_INTERVAL="${KURUPIRO_APP_SWITCH_CHECK_INTERVAL:-1s}"
 DRIVE_SYNC_INTERVAL="${KURUPIRO_DRIVE_SYNC_INTERVAL:-10min}"
 
 # X11セッション（rpd-x）に強制設定（Waylandではunclutterが動作しないため）
@@ -206,7 +204,7 @@ server {
         # ローカルのwwwディレクトリから配信
     }
 
-    location ~ ^/slideshow\.(html|css|js)$ {
+    location ~ ^/(slideshow|controller)\.(html|css|js)$ {
         # ローカルのwwwディレクトリから配信
     }
 
@@ -346,31 +344,8 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-# app-switcher.timer（短い周期で状態を見て必要時だけ切り替え）
-cat > /etc/systemd/system/app-switcher.timer <<EOF
-[Unit]
-Description=App Switcher Timer
-
-[Timer]
-OnBootSec=${APP_SWITCH_CHECK_INTERVAL}
-OnUnitActiveSec=${APP_SWITCH_CHECK_INTERVAL}
-Unit=app-switcher.service
-
-[Install]
-WantedBy=timers.target
-EOF
-
-# app-switcher.service（アプリ切り替え）
-cat > /etc/systemd/system/app-switcher.service <<EOF
-[Unit]
-Description=App Switcher Service
-
-[Service]
-Type=oneshot
-ExecStart=${APP_DIR}/scripts/app-switcher.sh
-User=${PI_USER}
-Group=${PI_USER}
-EOF
+systemctl disable --now app-switcher.timer 2>/dev/null || true
+rm -f /etc/systemd/system/app-switcher.timer /etc/systemd/system/app-switcher.service
 
 echo "[7/9] 自動シャットダウン設定 (${SHUTDOWN_TIME})"
 
@@ -442,7 +417,6 @@ systemctl daemon-reload
 systemctl enable kurupiro-start.service
 systemctl enable kurupiro-reload.timer
 systemctl enable kurupiro-drive-sync.timer
-systemctl enable app-switcher.timer
 
 touch "${INSTALL_FLAG}"
 chown "${PI_USER}:${PI_USER}" "${INSTALL_FLAG}"

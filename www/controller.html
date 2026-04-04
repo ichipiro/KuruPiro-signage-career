@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>くるぴろコントローラー</title>
+  <link rel="stylesheet" href="./controller.css">
+</head>
+<body>
+  <main class="controller">
+    <iframe id="signage-frame" class="signage-frame" title="signage"></iframe>
+    <section id="ad-layer" class="ad-layer hidden" aria-hidden="true">
+      <img id="ad-image" class="ad-image" alt="広告画像">
+      <div class="ad-progress" id="ad-progress" aria-hidden="true">
+        <div class="ad-progress-fill" id="ad-progress-fill"></div>
+      </div>
+    </section>
+  </main>
+  <script src="./controller.js"></script>
+</body>
+</html>

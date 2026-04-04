@@ -20,7 +20,7 @@ HDMI でディスプレイに出力し、指定した時間で自動起動・自
 - **GitHub からの起動時 `git pull` 更新**
 - **毎日指定時刻に自動シャットダウン**（`.env` で設定可能）
 - **USB キーボード・マウス禁止（usbhid 無効化）**
-- **画面切り替えタイマー**（既定では60秒ごとに2つの Chromium 画面を切り替える）
+- **controller 画面制御**（1つの Chromium 内で通常サイネージと広告を切り替える）
 - **Google Drive 画像同期**（共有フォルダの画像を定期チェックしてローカル反映）
 
 ---
@@ -30,16 +30,15 @@ HDMI でディスプレイに出力し、指定した時間で自動起動・自
 ```
 /opt/kurupiro
 ├─ scripts/
-│   ├─ app-switcher.sh # アプリ切り替えタイマー
 │   ├─ setup.sh      # 初回セットアップ
-│   ├─ start.sh      # 起動時の git pull + Chromium 2画面起動
+│   ├─ start.sh      # 起動時の git pull + Chromium 起動
 │   ├─ reload.sh     # 軽いリロード（xdotool F5）
 │   ├─ sync-drive-images.sh # Google Drive 画像同期
 │   └─ common.sh     # 共通設定読み込み
 ├─ www/
 │   └─ offline.html  # オフライン時に表示する画面
 │      drive-images/ # Google Drive から同期した画像
-│      slideshow.html # スライドショー画面
+│      controller.html # 通常サイネージと広告を切り替える画面
 ├─ .env.sample       # URL などの設定サンプル
 ├─ .env              # 手動作成（Git に含めない）
 └─ README.md
@@ -89,11 +88,11 @@ nano .env
 # 表示する上流URL（nginx がプロキシする先）
 KURUPIRO_UPSTREAM_URL="https://example.com/kurupiro"
 
-# ChromiumでアクセスするURL（通常は localhost）
+# Chromium 内で通常表示するサイネージURL
 KURUPIRO_KIOSK_URL="http://localhost/"
 
-# スライドショー用の Chromium で開くURL
-KURUPIRO_SLIDESHOW_URL="http://localhost/slideshow.html"
+# Chromium で開く controller ページ
+KURUPIRO_CONTROLLER_URL="http://localhost/controller.html"
 
 # 表示に使う出力名（例: HDMI-1）
 KURUPIRO_DISPLAY_OUTPUT="HDMI-1"
@@ -104,11 +103,11 @@ KURUPIRO_DISPLAY_ROTATION="right"
 # 自動シャットダウン時刻（HH:MM形式）
 KURUPIRO_SHUTDOWN_TIME="21:57"
 
-# メイン画面とスライドショー画面を切り替える間隔
+# 通常サイネージを表示する時間
 KURUPIRO_APP_SWITCH_INTERVAL="60s"
 
-# 切り替え判定を行う周期
-KURUPIRO_APP_SWITCH_CHECK_INTERVAL="1s"
+# 広告画像1枚ごとの表示時間
+KURUPIRO_AD_IMAGE_DURATION="10s"
 
 # Google Drive の公開フォルダURL
 KURUPIRO_GOOGLE_DRIVE_FOLDER_URL="https://drive.google.com/drive/folders/xxxxxxxxxxxxxxxxxxxx"
@@ -127,11 +126,11 @@ sudo reboot
 
 ## 📝 補足
 
-- **起動時**: `start.sh` が自動実行され、`git pull` → Chromium 2画面を起動
+- **起動時**: `start.sh` が自動実行され、`git pull` → Chromium で `controller.html` を起動
 - **起動時**: Google Drive 画像を1回同期
 - **起動時**: `xrandr` で画面回転を適用
-- **60秒表示後**: メイン画面からスライドショー画面へ切り替え
-- **1秒ごと（既定）**: `app-switcher.service` が状態を確認
+- **60秒表示後**: 広告表示へ切り替え
+- **広告中**: 画像を 10 秒ごとに 1 周表示し、時刻表画面へ戻る
 - **2時間ごと**: `reload.sh` で F5 リロード
 - **10分ごと（既定）**: `sync-drive-images.sh` で Google Drive 画像を同期
 - **シャットダウン**: `.env` で設定した時刻に自動シャットダウン
@@ -143,11 +142,11 @@ sudo reboot
 - 同期対象は `png`, `jpg`, `jpeg`, `webp`, `gif` です。
 - Google Drive で削除された画像は、ローカルの `www/drive-images/` からも削除されます。
 - 新しく追加された画像は自動でダウンロードされます。
-- オフライン画面では `www/drive-images/index.json` を読み、取得済み画像があれば 10 秒ごとに順送り表示します。
-- 同期画像が 0 件ならスライドショー画面は何も表示せず、次回チェック時に画像があれば表示を再開します。
-- スライドショー画面は `slideshow.html` を別の Chromium ウィンドウで開き、画像を 10 秒ごとに切り替えます。
-- `app-switcher.sh` はメイン画面を 60 秒表示した後、Google Drive 画像を 1 周だけ表示してメイン画面へ戻します。
-- 画像が 0 件の間はスライドショーへ切り替えず、メイン画面を継続します。
+- `controller.html` が通常サイネージと広告表示を 1 ページ内で制御します。
+- Google Drive 画像がある場合、通常サイネージを 60 秒表示した後に広告表示へ切り替えます。
+- 広告は 1 枚 10 秒で 1 周だけ表示し、最後まで表示したら通常サイネージへ戻ります。
+- 広告中の下部バーは、通常サイネージへ戻るまでの残り時間を表します。
+- 画像が 0 件の間は広告表示に切り替えず、通常サイネージを継続します。
 
 ## 縦画面設定
 

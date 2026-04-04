@@ -1,0 +1,66 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.controller {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.signage-frame {
+  border: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.ad-layer {
+  position: absolute;
+  inset: 0;
+  padding: 2.5vw;
+  background:
+    radial-gradient(circle at top right, rgba(255, 208, 108, 0.28), transparent 32%),
+    linear-gradient(135deg, #0f3557 0%, #005394 52%, #04213f 100%);
+}
+
+.ad-layer.hidden {
+  display: none;
+}
+
+.ad-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 2vw;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2vw 4vw rgba(0, 0, 0, 0.25);
+}
+
+.ad-progress {
+  position: absolute;
+  left: 2.5vw;
+  right: 2.5vw;
+  bottom: 1.2vw;
+  height: 0.7vw;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 0.08vw rgba(255, 255, 255, 0.12);
+}
+
+.ad-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd06c 0%, #fff0b8 100%);
+}

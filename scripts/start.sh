@@ -8,7 +8,7 @@ set -euo pipefail
 #   1. git pull で最新のコードを取得
 #   1.1. Google Drive 画像同期
 #   2. nginx の起動確認
-#   3. Chromium のメイン画面とスライドショー画面を起動
+#   3. Chromium で controller.html を起動
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,11 +23,45 @@ REPO_URL="https://github.com/ichipiro/KuruPiro-signage-career.git"
 
 # 設定値（デフォルト）
 KIOSK_URL="${KURUPIRO_KIOSK_URL:-http://localhost/}"
-SLIDESHOW_URL="${KURUPIRO_SLIDESHOW_URL:-http://localhost/slideshow.html}"
+CONTROLLER_URL="${KURUPIRO_CONTROLLER_URL:-http://localhost/controller.html}"
 CHROMIUM_BIN="${KURUPIRO_CHROMIUM_BIN:-chromium}"
 CHROMIUM_PROFILE_BASE="${KURUPIRO_CHROMIUM_PROFILE_BASE:-/home/${KURUPIRO_PI_USER}/.config/kurupiro}"
 DISPLAY_OUTPUT="${KURUPIRO_DISPLAY_OUTPUT:-HDMI-1}"
 DISPLAY_ROTATION="${KURUPIRO_DISPLAY_ROTATION:-right}"
+MAIN_SCREEN_DURATION_SECONDS="$(python3 - "${KURUPIRO_APP_SWITCH_INTERVAL:-60s}" <<'PY'
+import re
+import sys
+value = sys.argv[1].strip().lower()
+match = re.fullmatch(r"(\d+)(s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours)?", value)
+if not match:
+    print(60000)
+    raise SystemExit(0)
+amount = int(match.group(1))
+unit = match.group(2) or "s"
+if unit.startswith("h"):
+    print(amount * 3600 * 1000)
+elif unit.startswith("m"):
+    print(amount * 60 * 1000)
+else:
+    print(amount * 1000)
+PY
+)"
+IMAGE_DURATION_MS="$(python3 - "${KURUPIRO_AD_IMAGE_DURATION:-10s}" <<'PY'
+import re
+import sys
+value = sys.argv[1].strip().lower()
+match = re.fullmatch(r"(\d+)(s|sec|secs|second|seconds|m|min|mins|minute|minutes)", value)
+if not match:
+    print(10000)
+    raise SystemExit(0)
+amount = int(match.group(1))
+unit = match.group(2) or "s"
+if unit.startswith("m"):
+    print(amount * 60 * 1000)
+else:
+    print(amount * 1000)
+PY
+)"
 
 echo "===== くるぴろ起動スクリプト開始 ====="
 
@@ -155,10 +189,30 @@ if [ -n "${DISPLAY_OUTPUT}" ] && [ -n "${DISPLAY_ROTATION}" ]; then
   fi
 fi
 
-echo "[kurupiro] URL: ${KIOSK_URL}"
-echo "[kurupiro] Slideshow URL: ${SLIDESHOW_URL}"
+if [ "${NGINX_SUCCESS}" = true ]; then
+  CONTROLLER_LAUNCH_URL="$(
+  python3 - "${CONTROLLER_URL}" "${KIOSK_URL}" "${MAIN_SCREEN_DURATION_SECONDS}" "${IMAGE_DURATION_MS}" <<'PY'
+import sys
+from urllib.parse import urlencode
 
-mkdir -p "${CHROMIUM_PROFILE_BASE}/main" "${CHROMIUM_PROFILE_BASE}/slideshow"
+base = sys.argv[1]
+params = urlencode({
+    "main": sys.argv[2],
+    "mainDurationMs": sys.argv[3],
+    "imageDurationMs": sys.argv[4],
+})
+separator = "&" if "?" in base else "?"
+print(f"{base}{separator}{params}")
+PY
+)"
+else
+  CONTROLLER_LAUNCH_URL="${KIOSK_URL}"
+fi
+
+echo "[kurupiro] URL: ${KIOSK_URL}"
+echo "[kurupiro] Controller URL: ${CONTROLLER_LAUNCH_URL}"
+
+mkdir -p "${CHROMIUM_PROFILE_BASE}/controller"
 
 CHROMIUM_COMMON_ARGS=(
   --incognito
@@ -179,22 +233,13 @@ CHROMIUM_COMMON_ARGS=(
 WARMUP_PID=$!
 echo "[kurupiro] キャッシュウォームアップ開始 (PID: ${WARMUP_PID})"
 
-pkill -f "${SLIDESHOW_URL}" 2>/dev/null || true
+pkill -f "${CONTROLLER_URL}" 2>/dev/null || true
 pkill -f "${KIOSK_URL}" 2>/dev/null || true
 
 nohup setsid "${CHROMIUM_BIN}" \
-  --kiosk "${KIOSK_URL}" \
-  --user-data-dir="${CHROMIUM_PROFILE_BASE}/main" \
+  --kiosk "${CONTROLLER_LAUNCH_URL}" \
+  --user-data-dir="${CHROMIUM_PROFILE_BASE}/controller" \
   "${CHROMIUM_COMMON_ARGS[@]}" \
   >/tmp/kurupiro-main-chromium.log 2>&1 </dev/null &
-
-sleep 5
-
-nohup setsid "${CHROMIUM_BIN}" \
-  --new-window "${SLIDESHOW_URL}" \
-  --start-fullscreen \
-  --user-data-dir="${CHROMIUM_PROFILE_BASE}/slideshow" \
-  "${CHROMIUM_COMMON_ARGS[@]}" \
-  >/tmp/kurupiro-slideshow-chromium.log 2>&1 </dev/null &
 
 echo "===== くるぴろ起動スクリプト終了 ====="

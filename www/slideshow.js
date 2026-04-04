@@ -1,5 +1,5 @@
 const MANIFEST_URL = './drive-images/index.json';
-const MANIFEST_REFRESH_INTERVAL = 5 * 60 * 1000;
+const MANIFEST_REFRESH_INTERVAL = 60 * 1000;
 const IMAGE_ROTATE_INTERVAL = 10 * 1000;
 
 let images = [];
@@ -12,11 +12,13 @@ function updateSlide() {
   if (!imageEl) return;
 
   if (images.length === 0) {
-    imageEl.src = imageEl.dataset.defaultSrc;
+    imageEl.removeAttribute('src');
+    imageEl.style.visibility = 'hidden';
     return;
   }
 
   const current = images[imageIndex % images.length];
+  imageEl.style.visibility = 'visible';
   imageEl.src = current.path;
 }
 

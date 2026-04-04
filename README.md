@@ -107,6 +107,9 @@ KURUPIRO_SHUTDOWN_TIME="21:57"
 # メイン画面とスライドショー画面を切り替える間隔
 KURUPIRO_APP_SWITCH_INTERVAL="60s"
 
+# 切り替え判定を行う周期
+KURUPIRO_APP_SWITCH_CHECK_INTERVAL="10s"
+
 # Google Drive の公開フォルダURL
 KURUPIRO_GOOGLE_DRIVE_FOLDER_URL="https://drive.google.com/drive/folders/xxxxxxxxxxxxxxxxxxxx"
 
@@ -127,7 +130,8 @@ sudo reboot
 - **起動時**: `start.sh` が自動実行され、`git pull` → Chromium 2画面を起動
 - **起動時**: Google Drive 画像を1回同期
 - **起動時**: `xrandr` で画面回転を適用
-- **60秒ごと（既定）**: `app-switcher.sh` でメイン画面とスライドショー画面を切り替え
+- **60秒表示後**: メイン画面からスライドショー画面へ切り替え
+- **10秒ごと**: `app-switcher.service` が状態を確認
 - **2時間ごと**: `reload.sh` で F5 リロード
 - **10分ごと（既定）**: `sync-drive-images.sh` で Google Drive 画像を同期
 - **シャットダウン**: `.env` で設定した時刻に自動シャットダウン
@@ -140,9 +144,10 @@ sudo reboot
 - Google Drive で削除された画像は、ローカルの `www/drive-images/` からも削除されます。
 - 新しく追加された画像は自動でダウンロードされます。
 - オフライン画面では `www/drive-images/index.json` を読み、取得済み画像があれば 10 秒ごとに順送り表示します。
-- 同期画像が 0 件なら既存の `ad-01.png` を表示します。
+- 同期画像が 0 件ならスライドショー画面は何も表示せず、次回チェック時に画像があれば表示を再開します。
 - スライドショー画面は `slideshow.html` を別の Chromium ウィンドウで開き、画像を 10 秒ごとに切り替えます。
-- `app-switcher.sh` はメイン画面とスライドショー画面を 60 秒ごとに交互表示します。
+- `app-switcher.sh` はメイン画面を 60 秒表示した後、Google Drive 画像を 1 周だけ表示してメイン画面へ戻します。
+- 画像が 0 件の間はスライドショーへ切り替えず、メイン画面を継続します。
 
 ## 縦画面設定
 

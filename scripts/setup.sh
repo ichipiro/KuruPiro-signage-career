@@ -84,6 +84,7 @@ SHUTDOWN_HOUR="${SHUTDOWN_TIME%%:*}"
 SHUTDOWN_MIN="${SHUTDOWN_TIME##*:}"
 RELOAD_INTERVAL="${KURUPIRO_RELOAD_INTERVAL:-2h}"
 APP_SWITCH_INTERVAL="${KURUPIRO_APP_SWITCH_INTERVAL:-60s}"
+APP_SWITCH_CHECK_INTERVAL="${KURUPIRO_APP_SWITCH_CHECK_INTERVAL:-10s}"
 DRIVE_SYNC_INTERVAL="${KURUPIRO_DRIVE_SYNC_INTERVAL:-10min}"
 
 # X11セッション（rpd-x）に強制設定（Waylandではunclutterが動作しないため）
@@ -345,14 +346,14 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-# app-switcher.timer（既定では60秒ごとに画面切り替え）
+# app-switcher.timer（短い周期で状態を見て必要時だけ切り替え）
 cat > /etc/systemd/system/app-switcher.timer <<EOF
 [Unit]
 Description=App Switcher Timer
 
 [Timer]
-OnBootSec=${APP_SWITCH_INTERVAL}
-OnUnitActiveSec=${APP_SWITCH_INTERVAL}
+OnBootSec=${APP_SWITCH_CHECK_INTERVAL}
+OnUnitActiveSec=${APP_SWITCH_CHECK_INTERVAL}
 Unit=app-switcher.service
 
 [Install]

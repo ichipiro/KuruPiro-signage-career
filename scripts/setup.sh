@@ -9,7 +9,7 @@ set -euo pipefail
 # ==============================================================================
 
 # ==== 設定値（必要に応じて修正） ====
-PI_USER="ie"
+PI_USER="ie-career"
 APP_DIR="/opt/kurupiro"
 INSTALL_FLAG="${APP_DIR}/.installed"
 

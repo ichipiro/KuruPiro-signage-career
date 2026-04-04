@@ -28,6 +28,7 @@ REPO_URL="https://github.com/ichipiro/KuruPiro-signage.git"
 
 # 設定値（デフォルト）
 KIOSK_URL="${KURUPIRO_KIOSK_URL:-http://localhost/}"
+KURUPIRO_PI_USER="${KURUPIRO_PI_USER:-ie-career}"
 
 echo "===== くるぴろ起動スクリプト開始 ====="
 
@@ -144,7 +145,7 @@ sleep 5
 
 # DISPLAY環境変数を設定（X11に接続するために必要）
 export DISPLAY=:0
-export XAUTHORITY=/home/ie/.Xauthority
+export XAUTHORITY="/home/${KURUPIRO_PI_USER}/.Xauthority"
 
 # X11が利用可能になるまで待機
 MAX_WAIT=30

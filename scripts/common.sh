@@ -16,4 +16,5 @@ load_kurupiro_env() {
 }
 
 export DISPLAY="${DISPLAY:-:0}"
-export XAUTHORITY="${XAUTHORITY:-/home/ie/.Xauthority}"
+KURUPIRO_PI_USER="${KURUPIRO_PI_USER:-ie-career}"
+export XAUTHORITY="${XAUTHORITY:-/home/${KURUPIRO_PI_USER}/.Xauthority}"

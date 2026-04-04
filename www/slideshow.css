@@ -29,37 +29,3 @@ body {
   background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 2vw 4vw rgba(0, 0, 0, 0.25);
 }
-
-.slideshow-overlay {
-  position: absolute;
-  left: 4vw;
-  right: 4vw;
-  bottom: 4vw;
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 2vw;
-}
-
-.slideshow-badge {
-  display: inline-flex;
-  align-items: center;
-  height: 3.3vw;
-  padding: 0 1.3vw;
-  border-radius: 999px;
-  background: rgba(255, 208, 108, 0.92);
-  color: #08233d;
-  font-size: 1.3vw;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.slideshow-caption {
-  max-width: 48vw;
-  padding: 0.9vw 1.3vw;
-  border-radius: 1vw;
-  background: rgba(9, 26, 43, 0.68);
-  color: #ffffff;
-  font-size: 1.1vw;
-  text-align: right;
-}

@@ -1,6 +1,6 @@
 const MANIFEST_URL = './drive-images/index.json';
 const MANIFEST_REFRESH_INTERVAL = 5 * 60 * 1000;
-const IMAGE_ROTATE_INTERVAL = 30 * 1000;
+const IMAGE_ROTATE_INTERVAL = 10 * 1000;
 
 let images = [];
 let imageIndex = 0;
@@ -9,18 +9,15 @@ let rotateTimer = null;
 
 function updateSlide() {
   const imageEl = document.getElementById('slideshow-image');
-  const captionEl = document.getElementById('slideshow-caption');
-  if (!imageEl || !captionEl) return;
+  if (!imageEl) return;
 
   if (images.length === 0) {
     imageEl.src = imageEl.dataset.defaultSrc;
-    captionEl.textContent = 'ローカル画像を表示中';
     return;
   }
 
   const current = images[imageIndex % images.length];
   imageEl.src = current.path;
-  captionEl.textContent = current.name;
 }
 
 function resetRotation() {

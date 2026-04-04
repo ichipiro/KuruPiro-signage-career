@@ -25,6 +25,7 @@ REPO_URL="https://github.com/ichipiro/KuruPiro-signage.git"
 KIOSK_URL="${KURUPIRO_KIOSK_URL:-http://localhost/}"
 SLIDESHOW_URL="${KURUPIRO_SLIDESHOW_URL:-http://localhost/slideshow.html}"
 CHROMIUM_BIN="${KURUPIRO_CHROMIUM_BIN:-chromium}"
+CHROMIUM_PROFILE_BASE="${KURUPIRO_CHROMIUM_PROFILE_BASE:-/home/${KURUPIRO_PI_USER}/.config/kurupiro}"
 
 echo "===== くるぴろ起動スクリプト開始 ====="
 
@@ -146,6 +147,21 @@ xsetroot -solid black 2>/dev/null || true
 echo "[kurupiro] URL: ${KIOSK_URL}"
 echo "[kurupiro] Slideshow URL: ${SLIDESHOW_URL}"
 
+mkdir -p "${CHROMIUM_PROFILE_BASE}/main" "${CHROMIUM_PROFILE_BASE}/slideshow"
+
+CHROMIUM_COMMON_ARGS=(
+  --incognito
+  --noerrdialogs
+  --disable-session-crashed-bubble
+  --autoplay-policy=no-user-gesture-required
+  --disable-translate
+  --disable-features=Translate
+  --no-first-run
+  --no-default-browser-check
+  --password-store=basic
+  --disable-sync
+)
+
 # キャッシュウォームアップをバックグラウンドで開始
 # （ネットワーク不安定環境対策: 起動後に数回リロードしてキャッシュを蓄積）
 "${SCRIPT_DIR}/warmup-reload.sh" &
@@ -157,12 +173,8 @@ pkill -f "${KIOSK_URL}" 2>/dev/null || true
 
 nohup setsid "${CHROMIUM_BIN}" \
   --kiosk "${KIOSK_URL}" \
-  --incognito \
-  --noerrdialogs \
-  --disable-session-crashed-bubble \
-  --autoplay-policy=no-user-gesture-required \
-  --disable-translate \
-  --disable-features=Translate \
+  --user-data-dir="${CHROMIUM_PROFILE_BASE}/main" \
+  "${CHROMIUM_COMMON_ARGS[@]}" \
   >/tmp/kurupiro-main-chromium.log 2>&1 </dev/null &
 
 sleep 5
@@ -170,12 +182,8 @@ sleep 5
 nohup setsid "${CHROMIUM_BIN}" \
   --new-window "${SLIDESHOW_URL}" \
   --start-fullscreen \
-  --incognito \
-  --noerrdialogs \
-  --disable-session-crashed-bubble \
-  --autoplay-policy=no-user-gesture-required \
-  --disable-translate \
-  --disable-features=Translate \
+  --user-data-dir="${CHROMIUM_PROFILE_BASE}/slideshow" \
+  "${CHROMIUM_COMMON_ARGS[@]}" \
   >/tmp/kurupiro-slideshow-chromium.log 2>&1 </dev/null &
 
 echo "===== くるぴろ起動スクリプト終了 ====="

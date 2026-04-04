@@ -20,7 +20,7 @@ HDMI でディスプレイに出力し、指定した時間で自動起動・自
 - **GitHub からの起動時 `git pull` 更新**
 - **毎日指定時刻に自動シャットダウン**（`.env` で設定可能）
 - **USB キーボード・マウス禁止（usbhid 無効化）**
-- **画面切り替えタイマー**（30秒ごとに2つの Chromium 画面を切り替える）
+- **画面切り替えタイマー**（既定では60秒ごとに2つの Chromium 画面を切り替える）
 - **Google Drive 画像同期**（共有フォルダの画像を定期チェックしてローカル反映）
 
 ---
@@ -98,6 +98,9 @@ KURUPIRO_SLIDESHOW_URL="http://localhost/slideshow.html"
 # 自動シャットダウン時刻（HH:MM形式）
 KURUPIRO_SHUTDOWN_TIME="21:57"
 
+# メイン画面とスライドショー画面を切り替える間隔
+KURUPIRO_APP_SWITCH_INTERVAL="60s"
+
 # Google Drive の公開フォルダURL
 KURUPIRO_GOOGLE_DRIVE_FOLDER_URL="https://drive.google.com/drive/folders/xxxxxxxxxxxxxxxxxxxx"
 
@@ -117,7 +120,7 @@ sudo reboot
 
 - **起動時**: `start.sh` が自動実行され、`git pull` → Chromium 2画面を起動
 - **起動時**: Google Drive 画像を1回同期
-- **30秒ごと**: `app-switcher.sh` でメイン画面とスライドショー画面を切り替え
+- **60秒ごと（既定）**: `app-switcher.sh` でメイン画面とスライドショー画面を切り替え
 - **2時間ごと**: `reload.sh` で F5 リロード
 - **10分ごと（既定）**: `sync-drive-images.sh` で Google Drive 画像を同期
 - **シャットダウン**: `.env` で設定した時刻に自動シャットダウン
@@ -129,6 +132,7 @@ sudo reboot
 - 同期対象は `png`, `jpg`, `jpeg`, `webp`, `gif` です。
 - Google Drive で削除された画像は、ローカルの `www/drive-images/` からも削除されます。
 - 新しく追加された画像は自動でダウンロードされます。
-- オフライン画面では `www/drive-images/index.json` を読み、取得済み画像があれば 30 秒ごとに順送り表示します。
+- オフライン画面では `www/drive-images/index.json` を読み、取得済み画像があれば 10 秒ごとに順送り表示します。
 - 同期画像が 0 件なら既存の `ad-01.png` を表示します。
-- スライドショー画面は `slideshow.html` を別の Chromium ウィンドウで開き、`app-switcher.sh` がメイン画面と交互に前面表示します。
+- スライドショー画面は `slideshow.html` を別の Chromium ウィンドウで開き、画像を 10 秒ごとに切り替えます。
+- `app-switcher.sh` はメイン画面とスライドショー画面を 60 秒ごとに交互表示します。

@@ -6,7 +6,7 @@ const KURUPIRO_SERVER_URL = 'https://kurupiro.ichipiro.net/';
 const API_SERVER_URL = 'https://kurupiro.ichipiro.net/api/';
 const DRIVE_IMAGE_MANIFEST_URL = './drive-images/index.json';
 const DRIVE_IMAGE_REFRESH_INTERVAL = 5 * 60 * 1000;
-const DRIVE_IMAGE_ROTATE_INTERVAL = 30 * 1000;
+const DRIVE_IMAGE_ROTATE_INTERVAL = 10 * 1000;
 
 let retryCountdown = RETRY_INTERVAL;
 let driveImages = [];

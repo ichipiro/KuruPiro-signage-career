@@ -4,7 +4,8 @@ set -euo pipefail
 # ==============================================================================
 # app-switcher.sh - アプリケーション切り替えスクリプト
 # ==============================================================================
-# このスクリプトは、キャリアルーム用アプリケーションとChromiumキオスクモードを30秒ごとに切り替えるために使用されます。
+# このスクリプトは、メイン画面とスライドショー画面の Chromium ウィンドウを
+# 30秒ごとに切り替えるために使用されます。
 # systemd timer から呼び出され、現在の状態に応じてアクティブを切り替えます。
 # ==============================================================================
 
@@ -13,22 +14,30 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "${SCRIPT_DIR}/common.sh"
 load_kurupiro_env
 
-first_window_id() {
+SLIDESHOW_WINDOW_TITLE="${KURUPIRO_SLIDESHOW_WINDOW_TITLE:-くるぴろスライドショー - Chromium}"
+
+find_visible_window_by_name() {
   local name="$1"
 
   xdotool search --onlyvisible --name "${name}" 2>/dev/null | head -n 1 || true
 }
 
-first_window_id_by_pid() {
-  local process_name="$1"
-  local pid
+find_main_chromium_window() {
+  local window_id
+  local window_name
 
-  pid="$(pgrep -n -x "${process_name}" 2>/dev/null || true)"
-  if [ -z "${pid}" ]; then
+  while IFS= read -r window_id; do
+    [ -n "${window_id}" ] || continue
+    window_name="$(xdotool getwindowname "${window_id}" 2>/dev/null || true)"
+    if [ -z "${window_name}" ]; then
+      continue
+    fi
+    if [ "${window_name}" = "${SLIDESHOW_WINDOW_TITLE}" ]; then
+      continue
+    fi
+    printf '%s\n' "${window_id}"
     return 0
-  fi
-
-  xdotool search --onlyvisible --pid "${pid}" 2>/dev/null | head -n 1 || true
+  done < <(xdotool search --onlyvisible --name "Chromium" 2>/dev/null || true)
 }
 
 if ! ACTIVE_WINDOW=$(xdotool getactivewindow 2>/dev/null); then
@@ -36,29 +45,25 @@ if ! ACTIVE_WINDOW=$(xdotool getactivewindow 2>/dev/null); then
   exit 0
 fi
 
-APP_WINDOW="$(first_window_id_by_pid "ebitv")"
-if [ -z "${APP_WINDOW}" ]; then
-  APP_WINDOW="$(first_window_id "ebitv")"
-fi
+SLIDESHOW_WINDOW="$(find_visible_window_by_name "${SLIDESHOW_WINDOW_TITLE}")"
+MAIN_WINDOW="$(find_main_chromium_window)"
 
-CHROME_WINDOW="$(first_window_id "Chromium")"
-
-if [ -n "$APP_WINDOW" ] && [ "${ACTIVE_WINDOW}" = "${APP_WINDOW}" ]; then
-  # アプリがアクティブならChromiumをアクティブにする
-  if [ -n "$CHROME_WINDOW" ]; then
-    xdotool windowactivate --sync "$CHROME_WINDOW"
-    echo "[app-switcher] Chromium をアクティブに切り替えました"
+if [ -n "$SLIDESHOW_WINDOW" ] && [ "${ACTIVE_WINDOW}" = "${SLIDESHOW_WINDOW}" ]; then
+  # スライドショーがアクティブならメイン画面をアクティブにする
+  if [ -n "$MAIN_WINDOW" ]; then
+    xdotool windowactivate --sync "$MAIN_WINDOW"
+    echo "[app-switcher] メイン画面をアクティブに切り替えました"
   else
-    echo "[app-switcher] 警告: Chromium のウィンドウが見つかりません" >&2
+    echo "[app-switcher] 警告: メイン画面の Chromium ウィンドウが見つかりません" >&2
   fi
-elif [ -n "$CHROME_WINDOW" ] && [ "${ACTIVE_WINDOW}" = "${CHROME_WINDOW}" ]; then
-  # Chromiumがアクティブならアプリをアクティブにする
-  if [ -n "$APP_WINDOW" ]; then
-    xdotool windowactivate --sync "$APP_WINDOW"
-    echo "[app-switcher] キャリアルーム用アプリケーションをアクティブに切り替えました"
+elif [ -n "$MAIN_WINDOW" ] && [ "${ACTIVE_WINDOW}" = "${MAIN_WINDOW}" ]; then
+  # メイン画面がアクティブならスライドショーをアクティブにする
+  if [ -n "$SLIDESHOW_WINDOW" ]; then
+    xdotool windowactivate --sync "$SLIDESHOW_WINDOW"
+    echo "[app-switcher] スライドショー画面をアクティブに切り替えました"
   else
-    echo "[app-switcher] 警告: キャリアルーム用アプリケーションのウィンドウが見つかりません" >&2
+    echo "[app-switcher] 警告: スライドショー用の Chromium ウィンドウが見つかりません" >&2
   fi
 else
-  echo "[app-switcher] 現在のアクティブウィンドウはキャリアルーム用アプリケーションでもChromiumでもありません。切り替えは行いません。"
+  echo "[app-switcher] 現在のアクティブウィンドウは切り替え対象の Chromium ウィンドウではありません。切り替えは行いません。"
 fi

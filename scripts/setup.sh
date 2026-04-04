@@ -204,6 +204,14 @@ server {
         # ローカルのwwwディレクトリから配信
     }
 
+    location ~ ^/slideshow\.(html|css|js)$ {
+        # ローカルのwwwディレクトリから配信
+    }
+
+    location ^~ /drive-images/ {
+        # Google Drive から同期した画像とマニフェストをローカル配信
+    }
+
     location ~ ^/(logo|bus|ad-01|for-smartphone|qr)\.png$ {
         # ローカルのwwwディレクトリから配信（オフライン画面用アセット）
     }

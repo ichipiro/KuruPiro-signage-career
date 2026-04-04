@@ -6,10 +6,9 @@ set -euo pipefail
 # ==============================================================================
 # このスクリプトは Raspberry Pi の起動時に毎回実行され、以下を行います:
 #   1. git pull で最新のコードを取得
-#   1.1. キャリアルーム用アプリケーションのダウンロード
-#   1.2. キャリアルーム用アプリケーションの起動
+#   1.1. Google Drive 画像同期
 #   2. nginx の起動確認
-#   3. Chromium キオスクモードの起動
+#   3. Chromium のメイン画面とスライドショー画面を起動
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,6 +28,8 @@ REPO_URL="https://github.com/ichipiro/KuruPiro-signage.git"
 # 設定値（デフォルト）
 KIOSK_URL="${KURUPIRO_KIOSK_URL:-http://localhost/}"
 KURUPIRO_PI_USER="${KURUPIRO_PI_USER:-ie-career}"
+SLIDESHOW_URL="${KURUPIRO_SLIDESHOW_URL:-http://localhost/slideshow.html}"
+CHROMIUM_BIN="${KURUPIRO_CHROMIUM_BIN:-chromium}"
 
 echo "===== くるぴろ起動スクリプト開始 ====="
 
@@ -72,16 +73,6 @@ if [ -x "${SCRIPT_DIR}/sync-drive-images.sh" ]; then
     echo "[drive-sync] 警告: 起動時同期に失敗しました" >&2
   fi
 fi
-
-# --------------------------------------------------------------------------------
-# 1.1. キャリアルーム用アプリケーションのダウンロード
-# ------------------------------------------------------------------------------
-echo "[1.1/3] ebitvのダウンロード..."
-APP_URL="https://github.com/ajinori-256/ebitv/releases/latest/download/ebitv-linux-arm64"
-mkdir -p "${BASE_DIR}/apps/ebitv"
-wget -q -O "${BASE_DIR}/apps/ebitv/ebitv" "${APP_URL}" || { echo "[ebitv] ebitvのダウンロードに失敗しました" >&2; }
-chmod +x "${BASE_DIR}/apps/ebitv/ebitv"
-echo "[ebitv] ebitvをダウンロードしました"
 
 # ------------------------------------------------------------------------------
 # 2. nginx 起動確認（失敗してもChromium起動は続行）
@@ -161,18 +152,8 @@ echo "[kurupiro] スクリーンセーバー・DPMSを無効化しました"
 # 背景を黒に設定
 xsetroot -solid black 2>/dev/null || true
 
-# ------------------------------------------------------------------------------
-# 3.1. キャリアルーム用アプリケーションの起動
-# ------------------------------------------------------------------------------
-echo "[3.1/3] ebitvの起動..."
-if [ -f "${BASE_DIR}/apps/ebitv/ebitv" ]; then
-  "${BASE_DIR}/apps/ebitv/ebitv" --no-splash &
-  echo "[ebitv] ebitvを起動しました"
-else
-  echo "[ebitv] 警告: ebitvの実行ファイルが見つかりません" >&2
-fi
-
 echo "[kurupiro] URL: ${KIOSK_URL}"
+echo "[kurupiro] Slideshow URL: ${SLIDESHOW_URL}"
 
 # キャッシュウォームアップをバックグラウンドで開始
 # （ネットワーク不安定環境対策: 起動後に数回リロードしてキャッシュを蓄積）
@@ -180,13 +161,30 @@ echo "[kurupiro] URL: ${KIOSK_URL}"
 WARMUP_PID=$!
 echo "[kurupiro] キャッシュウォームアップ開始 (PID: ${WARMUP_PID})"
 
-chromium \
+pkill -f "${SLIDESHOW_URL}" 2>/dev/null || true
+pkill -f "${KIOSK_URL}" 2>/dev/null || true
+
+"${CHROMIUM_BIN}" \
   --kiosk "${KIOSK_URL}" \
   --incognito \
   --noerrdialogs \
   --disable-session-crashed-bubble \
   --autoplay-policy=no-user-gesture-required \
   --disable-translate \
-  --disable-features=Translate
+  --disable-features=Translate \
+  >/tmp/kurupiro-main-chromium.log 2>&1 &
+
+sleep 5
+
+"${CHROMIUM_BIN}" \
+  --new-window "${SLIDESHOW_URL}" \
+  --start-fullscreen \
+  --incognito \
+  --noerrdialogs \
+  --disable-session-crashed-bubble \
+  --autoplay-policy=no-user-gesture-required \
+  --disable-translate \
+  --disable-features=Translate \
+  >/tmp/kurupiro-slideshow-chromium.log 2>&1 &
 
 echo "===== くるぴろ起動スクリプト終了 ====="

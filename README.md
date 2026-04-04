@@ -20,8 +20,7 @@ HDMI でディスプレイに出力し、指定した時間で自動起動・自
 - **GitHub からの起動時 `git pull` 更新**
 - **毎日指定時刻に自動シャットダウン**（`.env` で設定可能）
 - **USB キーボード・マウス禁止（usbhid 無効化）**
-- **アプリ切り替えタイマー**（30秒ごとにアプリケーションを切り替える）
-- **キャリアルーム用アプリケーション**（定期的にダウンロードして起動）
+- **画面切り替えタイマー**（30秒ごとに2つの Chromium 画面を切り替える）
 - **Google Drive 画像同期**（共有フォルダの画像を定期チェックしてローカル反映）
 
 ---
@@ -33,18 +32,14 @@ HDMI でディスプレイに出力し、指定した時間で自動起動・自
 ├─ scripts/
 │   ├─ app-switcher.sh # アプリ切り替えタイマー
 │   ├─ setup.sh      # 初回セットアップ
-│   ├─ start.sh      # 起動時の git pull + Chromium キオスク起動
+│   ├─ start.sh      # 起動時の git pull + Chromium 2画面起動
 │   ├─ reload.sh     # 軽いリロード（xdotool F5）
 │   ├─ sync-drive-images.sh # Google Drive 画像同期
 │   └─ common.sh     # 共通設定読み込み
-├─ apps/
-│  └─ ebitv/
-│       ├─ ebitv # キャリアルーム用アプリケーション
-│       ├─ config.ini # アプリケーションの設定ファイル
-│       └─ data/  # アプリケーションのデータ保存先
 ├─ www/
 │   └─ offline.html  # オフライン時に表示する画面
 │      drive-images/ # Google Drive から同期した画像
+│      slideshow.html # スライドショー画面
 ├─ .env.sample       # URL などの設定サンプル
 ├─ .env              # 手動作成（Git に含めない）
 └─ README.md
@@ -97,6 +92,9 @@ KURUPIRO_UPSTREAM_URL="https://example.com/kurupiro"
 # ChromiumでアクセスするURL（通常は localhost）
 KURUPIRO_KIOSK_URL="http://localhost/"
 
+# スライドショー用の Chromium で開くURL
+KURUPIRO_SLIDESHOW_URL="http://localhost/slideshow.html"
+
 # 自動シャットダウン時刻（HH:MM形式）
 KURUPIRO_SHUTDOWN_TIME="21:57"
 
@@ -117,9 +115,9 @@ sudo reboot
 
 ## 📝 補足
 
-- **起動時**: `start.sh` が自動実行され、`git pull` → Chromium キオスク起動
+- **起動時**: `start.sh` が自動実行され、`git pull` → Chromium 2画面を起動
 - **起動時**: Google Drive 画像を1回同期
-- **30秒ごと**: `app-switcher.sh` でアプリケーション切り替え
+- **30秒ごと**: `app-switcher.sh` でメイン画面とスライドショー画面を切り替え
 - **2時間ごと**: `reload.sh` で F5 リロード
 - **10分ごと（既定）**: `sync-drive-images.sh` で Google Drive 画像を同期
 - **シャットダウン**: `.env` で設定した時刻に自動シャットダウン
@@ -133,3 +131,4 @@ sudo reboot
 - 新しく追加された画像は自動でダウンロードされます。
 - オフライン画面では `www/drive-images/index.json` を読み、取得済み画像があれば 30 秒ごとに順送り表示します。
 - 同期画像が 0 件なら既存の `ad-01.png` を表示します。
+- スライドショー画面は `slideshow.html` を別の Chromium ウィンドウで開き、`app-switcher.sh` がメイン画面と交互に前面表示します。

@@ -97,6 +97,12 @@ KURUPIRO_CONTROLLER_URL="http://localhost/controller.html"
 # 表示に使う出力名（例: HDMI-1）
 KURUPIRO_DISPLAY_OUTPUT="HDMI-1"
 
+# 表示解像度（例: 1920x1080）
+KURUPIRO_DISPLAY_MODE="1920x1080"
+
+# リフレッシュレート（例: 60）
+KURUPIRO_DISPLAY_RATE="60"
+
 # 画面回転（normal / left / right / inverted）
 KURUPIRO_DISPLAY_ROTATION="right"
 
@@ -128,7 +134,7 @@ sudo reboot
 
 - **起動時**: `start.sh` が自動実行され、`git pull` → Chromium で `controller.html` を起動
 - **起動時**: Google Drive 画像を1回同期
-- **起動時**: `xrandr` で画面回転を適用
+- **起動時**: `xrandr` で解像度・リフレッシュレート・画面回転を適用
 - **60秒表示後**: 広告表示へ切り替え
 - **広告中**: 画像を 10 秒ごとに 1 周表示し、時刻表画面へ戻る
 - **2時間ごと**: `reload.sh` で F5 リロード
@@ -151,5 +157,6 @@ sudo reboot
 ## 縦画面設定
 
 - `.env` の `KURUPIRO_DISPLAY_OUTPUT` に出力名、`KURUPIRO_DISPLAY_ROTATION` に回転方向を設定します。
+- `.env` の `KURUPIRO_DISPLAY_MODE` と `KURUPIRO_DISPLAY_RATE` で解像度とリフレッシュレートを固定できます。
 - 縦画面なら通常は `KURUPIRO_DISPLAY_ROTATION="right"` または `left` を使います。
 - 出力名は Raspberry Pi 上で `xrandr` を実行すると確認できます。

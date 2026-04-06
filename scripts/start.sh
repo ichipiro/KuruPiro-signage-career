@@ -27,6 +27,8 @@ CONTROLLER_URL="${KURUPIRO_CONTROLLER_URL:-http://localhost/controller.html}"
 CHROMIUM_BIN="${KURUPIRO_CHROMIUM_BIN:-chromium}"
 CHROMIUM_PROFILE_BASE="${KURUPIRO_CHROMIUM_PROFILE_BASE:-/home/${KURUPIRO_PI_USER}/.config/kurupiro}"
 DISPLAY_OUTPUT="${KURUPIRO_DISPLAY_OUTPUT:-HDMI-1}"
+DISPLAY_MODE="${KURUPIRO_DISPLAY_MODE:-1920x1080}"
+DISPLAY_RATE="${KURUPIRO_DISPLAY_RATE:-60}"
 DISPLAY_ROTATION="${KURUPIRO_DISPLAY_ROTATION:-right}"
 MAIN_SCREEN_DURATION_SECONDS="$(python3 - "${KURUPIRO_APP_SWITCH_INTERVAL:-60s}" <<'PY'
 import re
@@ -180,12 +182,23 @@ echo "[kurupiro] スクリーンセーバー・DPMSを無効化しました"
 # 背景を黒に設定
 xsetroot -solid black 2>/dev/null || true
 
-# 画面回転を適用
-if [ -n "${DISPLAY_OUTPUT}" ] && [ -n "${DISPLAY_ROTATION}" ]; then
-  if xrandr --output "${DISPLAY_OUTPUT}" --rotate "${DISPLAY_ROTATION}" 2>/tmp/kurupiro-xrandr.log; then
-    echo "[kurupiro] 画面回転を適用しました: ${DISPLAY_OUTPUT} -> ${DISPLAY_ROTATION}"
+# 解像度と画面回転を適用
+if [ -n "${DISPLAY_OUTPUT}" ]; then
+  XRANDR_ARGS=(--output "${DISPLAY_OUTPUT}")
+  if [ -n "${DISPLAY_MODE}" ]; then
+    XRANDR_ARGS+=(--mode "${DISPLAY_MODE}")
+  fi
+  if [ -n "${DISPLAY_RATE}" ]; then
+    XRANDR_ARGS+=(--rate "${DISPLAY_RATE}")
+  fi
+  if [ -n "${DISPLAY_ROTATION}" ]; then
+    XRANDR_ARGS+=(--rotate "${DISPLAY_ROTATION}")
+  fi
+
+  if xrandr "${XRANDR_ARGS[@]}" 2>/tmp/kurupiro-xrandr.log; then
+    echo "[kurupiro] 表示設定を適用しました: output=${DISPLAY_OUTPUT} mode=${DISPLAY_MODE} rate=${DISPLAY_RATE} rotate=${DISPLAY_ROTATION}"
   else
-    echo "[kurupiro] 警告: 画面回転の適用に失敗しました (${DISPLAY_OUTPUT} -> ${DISPLAY_ROTATION})" >&2
+    echo "[kurupiro] 警告: 表示設定の適用に失敗しました" >&2
   fi
 fi
 

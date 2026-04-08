@@ -182,23 +182,50 @@ echo "[kurupiro] スクリーンセーバー・DPMSを無効化しました"
 # 背景を黒に設定
 xsetroot -solid black 2>/dev/null || true
 
+wait_for_xrandr_output() {
+  local output_name="$1"
+  local mode_name="$2"
+  local timeout_seconds="$3"
+  local waited=0
+  local xrandr_output=""
+
+  while [ "${waited}" -lt "${timeout_seconds}" ]; do
+    xrandr_output="$(xrandr 2>/dev/null || true)"
+    if printf '%s\n' "${xrandr_output}" | grep -q "^${output_name} connected"; then
+      if [ -z "${mode_name}" ] || printf '%s\n' "${xrandr_output}" | grep -A20 "^${output_name} connected" | grep -q "^[[:space:]]*${mode_name}[[:space:]]"; then
+        return 0
+      fi
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  printf '%s\n' "${xrandr_output}" > /tmp/kurupiro-xrandr.log
+  return 1
+}
+
 # 解像度と画面回転を適用
 if [ -n "${DISPLAY_OUTPUT}" ]; then
   XRANDR_ARGS=(--output "${DISPLAY_OUTPUT}")
-  if [ -n "${DISPLAY_MODE}" ]; then
-    XRANDR_ARGS+=(--mode "${DISPLAY_MODE}")
-  fi
-  if [ -n "${DISPLAY_RATE}" ]; then
-    XRANDR_ARGS+=(--rate "${DISPLAY_RATE}")
-  fi
-  if [ -n "${DISPLAY_ROTATION}" ]; then
-    XRANDR_ARGS+=(--rotate "${DISPLAY_ROTATION}")
-  fi
 
-  if xrandr "${XRANDR_ARGS[@]}" 2>/tmp/kurupiro-xrandr.log; then
-    echo "[kurupiro] 表示設定を適用しました: output=${DISPLAY_OUTPUT} mode=${DISPLAY_MODE} rate=${DISPLAY_RATE} rotate=${DISPLAY_ROTATION}"
+  if wait_for_xrandr_output "${DISPLAY_OUTPUT}" "${DISPLAY_MODE}" 15; then
+    if [ -n "${DISPLAY_MODE}" ]; then
+      XRANDR_ARGS+=(--mode "${DISPLAY_MODE}")
+    fi
+    if [ -n "${DISPLAY_RATE}" ]; then
+      XRANDR_ARGS+=(--rate "${DISPLAY_RATE}")
+    fi
+    if [ -n "${DISPLAY_ROTATION}" ]; then
+      XRANDR_ARGS+=(--rotate "${DISPLAY_ROTATION}")
+    fi
+
+    if xrandr "${XRANDR_ARGS[@]}" 2>/tmp/kurupiro-xrandr.log; then
+      echo "[kurupiro] 表示設定を適用しました: output=${DISPLAY_OUTPUT} mode=${DISPLAY_MODE} rate=${DISPLAY_RATE} rotate=${DISPLAY_ROTATION}"
+    else
+      echo "[kurupiro] 警告: 表示設定の適用に失敗しました" >&2
+    fi
   else
-    echo "[kurupiro] 警告: 表示設定の適用に失敗しました" >&2
+    echo "[kurupiro] 警告: xrandr に ${DISPLAY_OUTPUT} / ${DISPLAY_MODE:-current mode} が現れないため表示設定をスキップします" >&2
   fi
 fi
 

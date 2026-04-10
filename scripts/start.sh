@@ -204,26 +204,47 @@ wait_for_xrandr_output() {
   return 1
 }
 
-# 解像度と画面回転を適用
+apply_display_rotation() {
+  local output_name="$1"
+  local rotation="$2"
+  local max_retry="$3"
+  local attempt=1
+
+  if [ -z "${rotation}" ]; then
+    return 0
+  fi
+
+  while [ "${attempt}" -le "${max_retry}" ]; do
+    if xrandr --output "${output_name}" --rotate "${rotation}" 2>/tmp/kurupiro-xrandr.log; then
+      echo "[kurupiro] 画面回転を適用しました: output=${output_name} rotate=${rotation}"
+      return 0
+    fi
+    echo "[kurupiro] 画面回転の適用を再試行します (${attempt}/${max_retry})" >&2
+    sleep 2
+    attempt=$((attempt + 1))
+  done
+
+  echo "[kurupiro] 警告: 画面回転の適用に失敗しました" >&2
+  return 1
+}
+
+# 解像度と画面回転を適用。回転は mode/rate 失敗の巻き添えにしない。
 if [ -n "${DISPLAY_OUTPUT}" ]; then
-  XRANDR_ARGS=(--output "${DISPLAY_OUTPUT}")
-
-  if wait_for_xrandr_output "${DISPLAY_OUTPUT}" "${DISPLAY_MODE}" 15; then
+  if wait_for_xrandr_output "${DISPLAY_OUTPUT}" "${DISPLAY_MODE}" 30; then
     if [ -n "${DISPLAY_MODE}" ]; then
-      XRANDR_ARGS+=(--mode "${DISPLAY_MODE}")
-    fi
-    if [ -n "${DISPLAY_RATE}" ]; then
-      XRANDR_ARGS+=(--rate "${DISPLAY_RATE}")
-    fi
-    if [ -n "${DISPLAY_ROTATION}" ]; then
-      XRANDR_ARGS+=(--rotate "${DISPLAY_ROTATION}")
+      XRANDR_MODE_ARGS=(--output "${DISPLAY_OUTPUT}" --mode "${DISPLAY_MODE}")
+      if [ -n "${DISPLAY_RATE}" ]; then
+        XRANDR_MODE_ARGS+=(--rate "${DISPLAY_RATE}")
+      fi
+
+      if xrandr "${XRANDR_MODE_ARGS[@]}" 2>/tmp/kurupiro-xrandr.log; then
+        echo "[kurupiro] 表示解像度を適用しました: output=${DISPLAY_OUTPUT} mode=${DISPLAY_MODE} rate=${DISPLAY_RATE}"
+      else
+        echo "[kurupiro] 警告: 表示解像度の適用に失敗しました。回転のみ続行します" >&2
+      fi
     fi
 
-    if xrandr "${XRANDR_ARGS[@]}" 2>/tmp/kurupiro-xrandr.log; then
-      echo "[kurupiro] 表示設定を適用しました: output=${DISPLAY_OUTPUT} mode=${DISPLAY_MODE} rate=${DISPLAY_RATE} rotate=${DISPLAY_ROTATION}"
-    else
-      echo "[kurupiro] 警告: 表示設定の適用に失敗しました" >&2
-    fi
+    apply_display_rotation "${DISPLAY_OUTPUT}" "${DISPLAY_ROTATION}" 5 || true
   else
     echo "[kurupiro] 警告: xrandr に ${DISPLAY_OUTPUT} / ${DISPLAY_MODE:-current mode} が現れないため表示設定をスキップします" >&2
   fi
